@@ -1,20 +1,20 @@
+import copy
 class Predicates():
     def __init__(self, predicate):
-        predicateList = predicate.split('(')
-        if '~' in predicateList[0]:
-            self.predicateName = predicateList[0]
+        finalPredicateList = predicate.split('(')
+        if '~' in finalPredicateList[0]:
             self.isNegative = True
         else:
-            self.predicateName = predicateList[0]
             self.isNegative = False
-        self.arguments = predicateList[1][:-1].split(',')
+        self.predicateName = finalPredicateList[0]
+        self.arguments = finalPredicateList[1][:-1].split(',')
         # print("predicate.predicateName: ", self.predicateName)
         # print("predicate.arguments: ", self.arguments)
 
 
 def toCNF(sentence, sentenceIndex):
     global predicateDict
-    global predicateList
+    global finalPredicateList
     isRight = False
     tempCNF = []
     temppredicateList = []
@@ -48,7 +48,7 @@ def toCNF(sentence, sentenceIndex):
             predicateDict[predicate].append([sentenceIndex, i])
             # convert to object
             temppredicateList.append(Predicates(tempCNF[i]))
-        predicateList.append(temppredicateList)
+        finalPredicateList.append(temppredicateList)
 
     # single literal
     else:
@@ -58,12 +58,13 @@ def toCNF(sentence, sentenceIndex):
         if predicate not in predicateDict.keys():
             predicateDict[predicate] = []
         predicateDict[predicate].append([sentenceIndex, 0])
-        predicateList.append([Predicates(sentenceList[0])])
+        finalPredicateList.append([Predicates(sentenceList[0])])
 
 
 def resolution(query):
     global predicateDict
-    global predicateList
+    global finalPredicateList
+    
     oldQueryPredicateName = query.predicateName
     newCNF = []
     isNegation = False
@@ -71,48 +72,89 @@ def resolution(query):
     variableDict = {}
     if query.isNegative == False:
         query.predicateName = '~' + query.predicateName
+        query.isNegative = True
         isNegation = True
     else:
         query.predicateName = query.predicateName[1:]
     newCNF.append(query)
-    print("query.predicateName: ", query.predicateName)
-    print("query.arguments: ", query.arguments)
-    index = predicateDict.get(oldQueryPredicateName)[0]
-    print("predicateList: ", index)
-    print("query.predicateName: ", query.predicateName)
+    while newCNF:
+        predicateList = copy.deepcopy(finalPredicateList)
+        query = newCNF[0]
+        # print("query.predicateName: ", query.predicateName)
+        # print("query.arguments: ", query.arguments)
+        if query.isNegative == True:
+            predicateNameNeeded = query.predicateName[1:]
+        else:
+            predicateNameNeeded = '~' + query.predicateName
+        
+        index = predicateDict.get(predicateNameNeeded)
+        # print("predicateNameNeeded: ", predicateNameNeeded)
+        # print("index: ", index)
+        if len(index) == 1:
+            index = index[0]
+        else:
+            sameConstant = False
+            for i in index:
+                tempPredicate = predicateList[i[0]][i[1]]
+                for j in range(len(tempPredicate.arguments)):
+                    variableIndex += 1
+                    if tempPredicate.arguments[j] == query.arguments[variableIndex]:
+                        index = i
+                        sameConstant = True
+                        break
+                variableIndex = -1
+                if sameConstant:
+                    break
+            if not sameConstant:
+                index = index[0]
 
-    #unify variables
-    targetPredicate = predicateList[index[0]][index[1]]
-    print("targetPredicate.predicateName: ", targetPredicate.predicateName)
-    for i in range(len(targetPredicate.arguments)):
-        variableIndex += 1
-        if len(targetPredicate.arguments[i]) == 1 and targetPredicate.arguments[i].islower():
-            variableName = targetPredicate.arguments[i]
-            targetPredicate.arguments[i] = query.arguments[variableIndex]
-            print("predicate.arguments[i]: ", targetPredicate.arguments[i])
-            variableDict[variableName] = query.arguments[variableIndex]
-    print("variableDict: ",variableDict)
-    variableIndex = 0
-    for predict in predicateList[index[0]]:
-        for i in range(len(predict.arguments)):
+
+        # print("predicateList: ", index)
+        # print("query.predicateName: ", query.predicateName)
+
+        # unify variables
+        targetPredicate = predicateList[index[0]][index[1]]
+        # print("targetPredicate.predicateName: ", targetPredicate.predicateName)
+        for i in range(len(targetPredicate.arguments)):
             variableIndex += 1
-            if len(predict.arguments[i]) == 1 and predict.arguments[i].islower():
-                variableName = predict.arguments[i]
-                predict.arguments[i] = variableDict.get(variableName)
-        print("predict.predicateName: ", predict.predicateName)
-        print("predicate.arguments[i]: ", predict.arguments)
-    predicateList[index[0]].pop(index[1])
-    newCNF.pop(0)
-    newCNF = predicateList[index[0]]
-    predicateList.pop(index[0])
-    for i in predicateList:
-        for j in i:
-            print(j.predicateName)
-    print("newCNF")
-    for i in newCNF:
-        print(i.predicateName)
-
-
+            if len(targetPredicate.arguments[i]) == 1 and targetPredicate.arguments[i].islower():
+                unifySuccess = True
+                variableName = targetPredicate.arguments[i]
+                targetPredicate.arguments[i] = query.arguments[variableIndex]
+                # print("predicate.arguments[i]: ", targetPredicate.arguments[i])
+                variableDict[variableName] = query.arguments[variableIndex]
+            else:
+                if targetPredicate.arguments[i] == query.arguments[variableIndex]:
+                    unifySuccess = True
+                    continue
+                else:
+                    unifySuccess = False
+                    return False
+        variableIndex = -1
+        # print("variableDict: ", variableDict)
+        for predict in predicateList[index[0]]:
+            for i in range(len(predict.arguments)):
+                variableIndex += 1
+                if len(predict.arguments[i]) == 1 and predict.arguments[i].islower():
+                    variableName = predict.arguments[i]
+                    predict.arguments[i] = variableDict.get(variableName)
+            variableIndex = -1
+            # print("predict.predicateName: ", predict.predicateName)
+            # print("predicate.arguments[i]: ", predict.arguments)
+        variableDict = {}
+        tempPredicateList = predicateList[index[0]].copy()
+        tempPredicateList.pop(index[1])
+        prevCNF = newCNF.copy()
+        newCNF.pop(0)
+        newCNF = tempPredicateList + newCNF
+        # for i in predicateList:
+        #     for j in i:
+        #         print(j.predicateName)
+        # print("newCNF")
+        # for i in newCNF:
+        #     print(i.predicateName)
+        #     print(i.arguments)
+    return True
 
 
 # read input file
@@ -123,7 +165,7 @@ queryList = []
 FOLList = []
 predicateDict = {}
 sentenceList = []
-predicateList = []
+finalPredicateList = []
 sentenceIndex = 0
 inputFile = open("input.txt", "r")
 for line in inputFile:
@@ -145,4 +187,4 @@ for line in inputFile:
 # print("len predicateList: ",len(predicateList))
 print("predicateDict =", predicateDict)
 for query in queryList:
-    resolution(query)
+    print(resolution(query))
