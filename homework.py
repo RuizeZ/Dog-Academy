@@ -80,33 +80,41 @@ def resolution(query):
     while newCNF:
         predicateList = copy.deepcopy(finalPredicateList)
         query = newCNF[0]
-        # print("query.predicateName: ", query.predicateName)
-        # print("query.arguments: ", query.arguments)
+        print("query.predicateName: ", query.predicateName)
+        print("query.arguments: ", query.arguments)
         if query.isNegative == True:
             predicateNameNeeded = query.predicateName[1:]
         else:
             predicateNameNeeded = '~' + query.predicateName
-        
-        index = predicateDict.get(predicateNameNeeded)
+        if predicateDict.get(predicateNameNeeded) == None:
+            print("Forward")
+        index = predicateDict.get(predicateNameNeeded).copy()
         # print("predicateNameNeeded: ", predicateNameNeeded)
         # print("index: ", index)
         if len(index) == 1:
             index = index[0]
         else:
             sameConstant = False
+            tempIndex = index.copy()
             for i in index:
                 tempPredicate = predicateList[i[0]][i[1]]
                 for j in range(len(tempPredicate.arguments)):
                     variableIndex += 1
-                    if tempPredicate.arguments[j] == query.arguments[variableIndex]:
-                        index = i
-                        sameConstant = True
-                        break
+                    if tempPredicate.arguments[j][0].isupper():
+                        if tempPredicate.arguments[j] == query.arguments[variableIndex]:
+                            sameConstant = True
+                        else:
+                            tempIndex.pop(tempIndex.index(i))
+                            sameConstant = False
+                            break
                 variableIndex = -1
                 if sameConstant:
+                    index = i
                     break
             if not sameConstant:
-                index = index[0]
+                if len(tempIndex) == 0:
+                    return False
+                index = tempIndex[0]
 
 
         # print("predicateList: ", index)
