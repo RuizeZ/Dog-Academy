@@ -143,16 +143,32 @@ def resolution(query):
             tempPredicateList.pop(currentIndex[1])
             if not tempPredicateList:
                 return True
+            startPredicate = tempPredicateList[0]
+            nextTargetSentences = True
+            for targetSentences in predicateDict[startPredicate.predicateName]:
+                if targetSentences[1] == 0:
+                    targetSentence = predicateList[targetSentences[0]]
+                    if len(targetSentence) == len(tempPredicateList):
+                        for predicteIndex in range(0, len(tempPredicateList)):
+                            if tempPredicateList[predicteIndex].predicateName == targetSentence[predicteIndex].predicateName and tempPredicateList[predicteIndex].arguments == targetSentence[predicteIndex].arguments:
+                                nextTargetSentences = False
+                                continue
+                            else:
+                                nextTargetSentences = True
+                                break
+                        if not nextTargetSentences:
+                            break
 
-            predicateList.append(tempPredicateList)
-            tempIndex = 0
-            for predicate in tempPredicateList:
-                if predicate.predicateName not in predicateDict.keys():
-                    predicateDict[predicate.predicateName] = []
-                predicateDict[predicate.predicateName].append([len(predicateList)-1, tempIndex])
-                tempIndex += 1
-            if len(tempPredicateList) == 1:
-                copySingleLiteralList.append(tempPredicateList[0])
+            if nextTargetSentences:
+                predicateList.append(tempPredicateList)
+                tempIndex = 0
+                for predicate in tempPredicateList:
+                    if predicate.predicateName not in predicateDict.keys():
+                        predicateDict[predicate.predicateName] = []
+                    predicateDict[predicate.predicateName].append([len(predicateList)-1, tempIndex])
+                    tempIndex += 1
+                if len(tempPredicateList) == 1:
+                    copySingleLiteralList.append(tempPredicateList[0])
     return False
 
 def output(answer, currentQuery, queryNum):
