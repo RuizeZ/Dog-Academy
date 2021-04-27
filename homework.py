@@ -7,6 +7,7 @@ class Predicates():
         else:
             self.isNegative = False
         self.predicateName = finalPredicateList[0]
+        # print(self.predicateName)
         self.arguments = finalPredicateList[1][:-1].split(',')
         # print("predicate.predicateName: ", self.predicateName)
         # print("predicate.arguments: ", self.arguments)
@@ -105,22 +106,29 @@ def resolution(query):
             nextIndex = False
             tempPredicateList = copy.deepcopy(predicateList[currentIndex[0]])
             targetPredicate = tempPredicateList[currentIndex[1]]
-            # print("predicateList: ", index)
-            # print("query.predicateName: ", query.predicateName)
+            # print("predicateList: ", currentIndex)
+            # print("targetPredicate.predicateName: ", targetPredicate.predicateName)
 
             # unify variables
             # print("targetPredicate.predicateName: ", targetPredicate.predicateName)
             for i in range(len(targetPredicate.arguments)):
                 if targetPredicate.arguments[i].islower() and not singleLiteral.arguments[i].islower():
                     variableName = targetPredicate.arguments[i]
-                    targetPredicate.arguments[i] = singleLiteral.arguments[i]
                     # print("predicate.arguments[i]: ", targetPredicate.arguments[i])
-                    variableDict[variableName] = singleLiteral.arguments[i]
+                    for j in range(len(targetPredicate.arguments)):
+                        if targetPredicate.arguments[j] == variableName:
+                            targetPredicate.arguments[j] = singleLiteral.arguments[i]
+                    if variableDict.get(variableName) == None:
+                        variableDict[variableName] = singleLiteral.arguments[i]
+
                 elif not targetPredicate.arguments[i].islower() and singleLiteral.arguments[i].islower():
                     variableName = singleLiteral.arguments[i]
-                    singleLiteral.arguments[i] = targetPredicate.arguments[i]
+                    for j in range(len(singleLiteral.arguments)):
+                        if singleLiteral.arguments[j] == variableName:
+                            singleLiteral.arguments[j] = targetPredicate.arguments[i]
+                    if variableDict.get(variableName) == None:
+                        variableDict[variableName] = targetPredicate.arguments[i]
                     # print("predicate.arguments[i]: ", targetPredicate.arguments[i])
-                    variableDict[variableName] = targetPredicate.arguments[i]
                 elif not targetPredicate.arguments[i].islower() and not singleLiteral.arguments[i].islower():
                     if targetPredicate.arguments[i] != singleLiteral.arguments[i]:
                         nextIndex = True
